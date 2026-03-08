@@ -1,112 +1,105 @@
-# Dopamine (Swift Rewrite)
+# Dopamine
 
-Dopamine is a depth-first focus coach that clusters conversations into projects, caps active work to 3 goals, and guides users toward small, high-leverage steps.
-This repository is now fully rewritten in Swift.
+Dopamine is a depth-first productivity coach built in Swift. It helps users stay focused by limiting active work to three projects, preserving momentum through completion-first coaching, and surfacing progress in a way users can discuss naturally in chat.
 
-## What Changed
+## Product Goal
 
-- Removed the previous Next.js/TypeScript implementation.
-- Replaced the project with a Swift package architecture.
-- Preserved core product behavior:
-  - Automatic project/topic clustering.
-  - Active-project cap with archive fallback.
-  - Focus, Momentum, Progress scoring.
-  - Leader-style coaching responses with score explainability in chat.
+Dopamine is designed around one behavior change loop:
 
-## Architecture
+1. **Constrain scope** to at most three active projects.
+2. **Encourage visible completion** through small, concrete actions.
+3. **Continuously explain** Focus, Momentum, and Progress in conversational language.
+
+The system is intentionally opinionated: depth over breadth.
+
+## Core Product Invariants
+
+- Maximum active projects is **3**.
+- If the cap is exceeded, archive the **lowest-momentum** active project.
+- Always maintain three metrics: **Focus**, **Momentum**, **Progress**.
+- Metric explanations must be available through chat behavior.
+
+## User Stories
+
+### Primary user stories
+
+- As a user, I can chat naturally about my work and Dopamine groups messages into projects so I do not need to manually organize everything.
+- As a user, I can only keep up to three active projects, so I am nudged to finish before I expand.
+- As a user, I can ask why a score changed and receive a practical explanation with an immediate next step.
+- As a user, I can manually correct project organization by renaming projects and reassigning messages.
+
+### UX-specific stories
+
+- As a user, I can quickly see active projects highlighted and archived projects muted in the rail.
+- As a user, I see unlabeled metric bars by default and can tap to reveal each metric name + percentage.
+- As a user, each chat message preserves project-color striping so project context remains visible.
+
+## Repository Architecture
 
 ### `DopamineCore`
 
-Swift domain engine and business logic:
+Domain and behavior engine:
 
-- Session state and project/message models.
-- Topic inference via token vectors + cosine similarity.
-- Top-3 active cap and lowest-momentum archive policy.
-- Focus, Momentum, Progress scoring and breakdowns.
-- Leader-style response generation.
-- In-process engine APIs (no HTTP server required in this repo).
+- Session state, message/project models, and typed responses.
+- Lightweight NLP routing (token vectors + cosine similarity).
+- Active cap / archive policy enforcement.
+- Focus, Momentum, Progress scoring + score breakdown generation.
+- Leader-style coaching response generation.
 
 ### `DopamineUI`
 
-SwiftUI views and view model:
+SwiftUI presentation layer:
 
-- Left project rail (active highlighted, archived muted).
-- Top 25% metric strip with 3 unlabeled color bars.
-- Tap-to-reveal metric name + percentage.
-- Chat pane with project-stripe messages.
-- Manual correction flows:
-  - Rename project.
-  - Reassign message to project.
-
-Note: `DopamineUI` is a SwiftUI module. Packaging into an iOS app target is tracked in the backlog below.
+- Project rail (active highlighted, archived muted).
+- Top metric strip with tap-to-reveal behavior.
+- Conversation pane with project-color stripe messages.
+- Manual correction controls (rename + reassign).
 
 ### `DopamineCLI`
 
-CLI harness for local behavior testing and demo runs.
+CLI harness for deterministic smoke validation of core behavior.
 
-## Repo Layout
+## Current Status
+
+- ✅ Swift rewrite complete.
+- ✅ Core model + scoring + routing behaviors implemented.
+- ✅ SwiftUI module available for integration into app targets.
+- ⚠️ Full iOS app target and production persistence/network integration are still planned.
+
+## Build and Validation
+
+### Prerequisites
+
+- Swift 6 toolchain.
+- macOS + Xcode for full package testing (SwiftUI target availability).
+
+### Standard validation commands
+
+```bash
+xcrun swift test
+xcrun swift run DopamineCLI
+```
+
+### Environment note
+
+In non-Apple environments (e.g., Linux CI), `DopamineUI` compilation may fail due to missing `SwiftUI`. In that case, prefer validating `DopamineCLI` behavior and run full tests on macOS CI.
+
+## Implementation Plan
+
+A principal-engineer-level implementation plan is maintained in:
+
+- [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)
+
+It contains phased execution, sequencing, acceptance criteria, risks, and validation strategy.
+
+## Repository Layout
 
 - `Package.swift`
 - `Sources/DopamineCore/`
 - `Sources/DopamineUI/`
 - `Sources/DopamineCLI/`
 - `Tests/DopamineCoreTests/`
-
-## Build and Test
-
-### Prerequisites
-
-- Xcode 16+ (or Swift 6 toolchain)
-- macOS with Swift toolchain installed
-
-### Run tests
-
-```bash
-xcrun swift test
-```
-
-### Run CLI demo
-
-```bash
-xcrun swift run DopamineCLI
-```
-
-## iOS Shift Backlog
-
-1. [x] Define iOS product behavior from the existing model (parity vs mobile adaptations).
-2. [x] Choose iOS stack and architecture (Swift package + SwiftUI modules).
-3. [x] Scaffold baseline project and CI-testable Swift package structure.
-4. [ ] Implement full app shell integration in an iOS app target.
-5. [ ] Implement production-grade project rail UX (active + archived infinite list).
-6. [ ] Implement production chat UX polish and interaction refinements.
-7. [ ] Integrate persistence/network service layer where required.
-8. [ ] Harden rename and reassignment correction flows in app-level UX.
-9. [ ] Finalize metric interaction contract (unlabeled by default, tap reveal only).
-10. [ ] Complete QA and TestFlight release prep.
-
-## iOS Shift Execution Plan
-
-### Phase 1: Foundation (Tasks 1-3)
-
-1. Lock parity requirements.
-2. Finalize iOS architecture decisions.
-3. Scaffold iOS app + CI foundation.
-
-### Phase 2: Core Experience (Tasks 4-6)
-
-4. Build shell/navigation and metric region.
-5. Build active/archived project UX.
-6. Build full chat experience.
-
-### Phase 3: Integration + Controls (Tasks 7-9)
-
-7. Add typed service integration.
-8. Add project/message correction controls.
-9. Finish metric interaction behavior.
-
-### Phase 4: Release Readiness (Task 10)
-
-10. Execute QA, accessibility, performance, and TestFlight packaging.
+- `docs/IMPLEMENTATION_PLAN.md`
 
 ## License
 
