@@ -117,6 +117,43 @@ npm start
 - Add audit trail for project reassignment/rename actions.
 - Add richer momentum/progress calibration from explicit task events.
 
+## iOS Shift Backlog
+
+1. Define iOS product behavior from the web app (what stays the same, what changes for mobile UX).
+2. Choose iOS stack and architecture (recommended: React Native + Expo).
+3. Scaffold the iOS app project and baseline CI for simulator/device builds.
+4. Implement the core iOS shell: metric bar area, project selector, and chat navigation.
+5. Build project management UI: top 3 active projects, muted archived list, paged/infinite archived loading.
+6. Build chat UI: message list, project color stripe, composer, and leader-style assistant responses.
+7. Integrate API client layer for all existing endpoints with typed request/response handling.
+8. Add manual correction flows on iOS: rename project and reassign message-to-project.
+9. Implement metric interaction: unlabeled bars by default, tap to reveal name + percentage only.
+10. Run iOS QA and release prep: functional checks, performance/accessibility pass, and TestFlight setup.
+
+## iOS Shift Execution Plan
+
+### Phase 1: Foundation (Tasks 1-3)
+
+1. Lock parity requirements between web and iOS (focus bars, active cap = 3, archive behavior, in-chat score explanations).
+2. Finalize iOS technical choices (React Native + Expo + TypeScript, backend API reuse, state strategy).
+3. Scaffold iOS app and CI baseline (project bootstrapping, env config, simulator build verification).
+
+### Phase 2: Core Experience (Tasks 4-6)
+
+4. Build navigation shell with top metric strip and primary chat/project flows.
+5. Implement project management UX for active and archived projects.
+6. Implement chat UI with project stripe styling and leader-style response rendering.
+
+### Phase 3: Integration + Controls (Tasks 7-9)
+
+7. Integrate typed API client with robust loading/error handling.
+8. Implement project rename and message reassignment correction flows.
+9. Implement unlabeled metric bar interactions with tap-to-reveal details only.
+
+### Phase 4: Release Readiness (Task 10)
+
+10. Complete QA, performance/accessibility checks, and TestFlight packaging.
+
 ## License
 
 No license has been added yet.
