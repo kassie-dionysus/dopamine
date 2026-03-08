@@ -95,7 +95,7 @@ See:
 - `DopamineApp`: SwiftUI app entry point.
 - `DopamineCLI`: local harness for behavior validation.
 
-## Repo Layout
+## Current Status
 
 - `Package.swift`
 - `ARCHITECTURE.md`
@@ -110,18 +110,13 @@ See:
 
 ### Prerequisites
 
-- Xcode 16+ (or Swift 6 toolchain)
-- macOS with Swift toolchain installed
+- Swift 6 toolchain.
+- macOS + Xcode for full package testing (SwiftUI target availability).
 
-### Run tests
+### Standard validation commands
 
 ```bash
 xcrun swift test
-```
-
-### Run CLI demo
-
-```bash
 xcrun swift run DopamineCLI
 ```
 
