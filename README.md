@@ -1,158 +1,112 @@
-# Dopamine
+# Dopamine (Swift Rewrite)
 
-Dopamine is a depth-first productivity chatbot that clusters conversations into projects, caps active work to three priorities, and coaches users toward small, high-leverage next steps.
-It tracks Focus, Momentum, and Progress with compact top-level metric bars while keeping detailed score reasoning in-chat.
+Dopamine is a depth-first focus coach that clusters conversations into projects, caps active work to 3 goals, and guides users toward small, high-leverage steps.
+This repository is now fully rewritten in Swift.
 
-## Status
+## What Changed
 
-This is a local-demo v1 implementation built with Next.js App Router and an in-memory backend.
+- Removed the previous Next.js/TypeScript implementation.
+- Replaced the project with a Swift package architecture.
+- Preserved core product behavior:
+  - Automatic project/topic clustering.
+  - Active-project cap with archive fallback.
+  - Focus, Momentum, Progress scoring.
+  - Leader-style coaching responses with score explainability in chat.
 
-## Core Product Behaviors
+## Architecture
 
-- OpenAI-style chat layout with a dedicated project rail.
-- Automatic project/topic inference from message content.
-- Exactly 3 active projects are highlighted; overflow projects are archived.
-- Archive policy: lowest-momentum active project is archived first.
-- Archived projects are shown in muted gray with paged/infinite-scroll loading.
-- Three unlabeled, color-coded horizontal metric bars at the top of the conversation area.
-- Bar tap reveals only metric name + percentage.
-- Score explanations and improvement coaching are intentionally handled via chat responses.
-- Manual correction controls:
+### `DopamineCore`
+
+Swift domain engine and business logic:
+
+- Session state and project/message models.
+- Topic inference via token vectors + cosine similarity.
+- Top-3 active cap and lowest-momentum archive policy.
+- Focus, Momentum, Progress scoring and breakdowns.
+- Leader-style response generation.
+- In-process engine APIs (no HTTP server required in this repo).
+
+### `DopamineUI`
+
+SwiftUI views and view model:
+
+- Left project rail (active highlighted, archived muted).
+- Top 25% metric strip with 3 unlabeled color bars.
+- Tap-to-reveal metric name + percentage.
+- Chat pane with project-stripe messages.
+- Manual correction flows:
   - Rename project.
-  - Reassign a message to a different project.
+  - Reassign message to project.
 
-## Metrics
+Note: `DopamineUI` is a SwiftUI module. Packaging into an iOS app target is tracked in the backlog below.
 
-- `Focus`: depth over breadth; penalizes context switching.
-- `Momentum`: compounding velocity from recent completions and continuity.
-- `Progress`: completion quality adjusted by hardness, time required, and feasibility signals.
+### `DopamineCLI`
 
-## Tech Stack
+CLI harness for local behavior testing and demo runs.
 
-- Next.js `15.2.0`
-- React `19`
-- TypeScript
-- Vitest + Testing Library
-- In-memory session/project/message store
+## Repo Layout
 
-## Project Structure
+- `Package.swift`
+- `Sources/DopamineCore/`
+- `Sources/DopamineUI/`
+- `Sources/DopamineCLI/`
+- `Tests/DopamineCoreTests/`
 
-- `app/page.tsx`: main UI shell and client state.
-- `app/globals.css`: styling and responsive layout.
-- `components/MetricBars.tsx`: top metric bar strip with tap-to-reveal.
-- `lib/store.ts`: in-memory state, project cap/archive logic, and message handling.
-- `lib/nlp.ts`: lightweight text vectorization and cosine similarity clustering.
-- `lib/scoring.ts`: Focus/Momentum/Progress scoring logic.
-- `lib/assistant.ts`: leader-style chat reply generation including score explainability.
-- `app/api/**`: REST endpoints used by the client.
-- `tests/**`: unit/component tests.
-
-## API Endpoints
-
-- `POST /api/chat/start`
-  - Body: `{ sessionId }`
-  - Returns initial assistant response, projects, scores, and messages.
-- `POST /api/chat/message`
-  - Body: `{ sessionId, message }`
-  - Returns assistant response + updated scores/projects/messages.
-- `POST /api/chat/finish`
-  - Body: `{ sessionId }`
-  - Returns reflection response + final metrics snapshot.
-- `POST /api/projects/switch`
-  - Body: `{ sessionId, projectId }`
-  - Applies top-3 cap/archive policy as needed and switches active context.
-- `POST /api/projects/rename`
-  - Body: `{ sessionId, projectId, name }`
-- `POST /api/messages/reassign`
-  - Body: `{ sessionId, messageId, projectId }`
-- `GET /api/projects/archived?sessionId=...&cursor=...`
-  - Returns paged archived project data.
-
-## Local Development
+## Build and Test
 
 ### Prerequisites
 
-- Node.js 18+
-- npm 9+
+- Xcode 16+ (or Swift 6 toolchain)
+- macOS with Swift toolchain installed
 
-### Install
-
-```bash
-npm install
-```
-
-### Run
+### Run tests
 
 ```bash
-npm run dev
+xcrun swift test
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
-
-### Test
+### Run CLI demo
 
 ```bash
-npm test
+xcrun swift run DopamineCLI
 ```
-
-### Production Build
-
-```bash
-npm run build
-npm start
-```
-
-## Current Limitations
-
-- In-memory state only (no database persistence).
-- Anonymous sessions only (no authentication).
-- Lightweight local vectorization for topic inference (not embeddings service-backed yet).
-- Local demo quality by design.
-
-## Suggested Next Steps
-
-- Replace local vectorization with embedding-based clustering.
-- Add persistent storage for sessions/projects/history.
-- Add auth + per-user workspaces.
-- Add audit trail for project reassignment/rename actions.
-- Add richer momentum/progress calibration from explicit task events.
 
 ## iOS Shift Backlog
 
-1. Define iOS product behavior from the web app (what stays the same, what changes for mobile UX).
-2. Choose iOS stack and architecture (recommended: React Native + Expo).
-3. Scaffold the iOS app project and baseline CI for simulator/device builds.
-4. Implement the core iOS shell: metric bar area, project selector, and chat navigation.
-5. Build project management UI: top 3 active projects, muted archived list, paged/infinite archived loading.
-6. Build chat UI: message list, project color stripe, composer, and leader-style assistant responses.
-7. Integrate API client layer for all existing endpoints with typed request/response handling.
-8. Add manual correction flows on iOS: rename project and reassign message-to-project.
-9. Implement metric interaction: unlabeled bars by default, tap to reveal name + percentage only.
-10. Run iOS QA and release prep: functional checks, performance/accessibility pass, and TestFlight setup.
+1. [x] Define iOS product behavior from the existing model (parity vs mobile adaptations).
+2. [x] Choose iOS stack and architecture (Swift package + SwiftUI modules).
+3. [x] Scaffold baseline project and CI-testable Swift package structure.
+4. [ ] Implement full app shell integration in an iOS app target.
+5. [ ] Implement production-grade project rail UX (active + archived infinite list).
+6. [ ] Implement production chat UX polish and interaction refinements.
+7. [ ] Integrate persistence/network service layer where required.
+8. [ ] Harden rename and reassignment correction flows in app-level UX.
+9. [ ] Finalize metric interaction contract (unlabeled by default, tap reveal only).
+10. [ ] Complete QA and TestFlight release prep.
 
 ## iOS Shift Execution Plan
 
 ### Phase 1: Foundation (Tasks 1-3)
 
-1. Lock parity requirements between web and iOS (focus bars, active cap = 3, archive behavior, in-chat score explanations).
-2. Finalize iOS technical choices (React Native + Expo + TypeScript, backend API reuse, state strategy).
-3. Scaffold iOS app and CI baseline (project bootstrapping, env config, simulator build verification).
+1. Lock parity requirements.
+2. Finalize iOS architecture decisions.
+3. Scaffold iOS app + CI foundation.
 
 ### Phase 2: Core Experience (Tasks 4-6)
 
-4. Build navigation shell with top metric strip and primary chat/project flows.
-5. Implement project management UX for active and archived projects.
-6. Implement chat UI with project stripe styling and leader-style response rendering.
+4. Build shell/navigation and metric region.
+5. Build active/archived project UX.
+6. Build full chat experience.
 
 ### Phase 3: Integration + Controls (Tasks 7-9)
 
-7. Integrate typed API client with robust loading/error handling.
-8. Implement project rename and message reassignment correction flows.
-9. Implement unlabeled metric bar interactions with tap-to-reveal details only.
+7. Add typed service integration.
+8. Add project/message correction controls.
+9. Finish metric interaction behavior.
 
 ### Phase 4: Release Readiness (Task 10)
 
-10. Complete QA, performance/accessibility checks, and TestFlight packaging.
+10. Execute QA, accessibility, performance, and TestFlight packaging.
 
 ## License
 

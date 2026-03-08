@@ -1,53 +1,40 @@
 # AGENTS.md
 
-Instructions for coding agents working in this repository.
+Repository instructions for coding agents.
 
-## Product Intent
+## Current Stack
 
-Dopamine is a depth-first productivity chatbot.
-The app should prioritize focus quality (sustained depth), momentum (small wins compounding), and practical progress (completion under constraints).
+This project is Swift-only.
+Do not reintroduce JavaScript/TypeScript/Node runtime unless explicitly requested.
+Do not add web-route or Next.js-style architecture back into this repository.
 
-## Non-Negotiable UX Rules
+## Product Invariants
 
-- Keep the OpenAI-style two-pane layout:
-  - Left: project rail.
-  - Right: conversation.
-- Keep the top metric strip at approximately 25% of viewport height.
-- Metric bars must be unlabeled by default.
-- Tapping a bar may reveal only name + percentage.
-- Do not add standalone score-explanation panels in the UI; explanations belong in chat.
-- Active project cap is 3; archived projects are muted gray.
+- Dopamine optimizes depth over breadth.
+- Keep active project cap at 3.
+- When cap is exceeded, archive lowest-momentum active project.
+- Keep three metrics: Focus, Momentum, Progress.
+- Metric explanations should be conversationally available through chat behavior.
 
-## Core Behavior Rules
+## UI Invariants
 
-- Preserve top-3 active cap enforcement.
-- Overflow or switch conflict should archive the lowest-momentum active project.
-- Keep manual correction affordances:
-  - Rename project.
-  - Reassign message/project mapping.
-- Maintain leader-style coaching responses: clear next step, ease signal, feasibility signal, momentum guidance.
+- Keep project rail semantics: active highlighted, archived muted.
+- Keep top metric strip behavior: unlabeled bars by default, tap reveals name + percentage.
+- Preserve project-color stripe on messages.
+- Preserve manual correction controls (rename + reassign).
 
-## Technical Constraints
+## Engineering Standards
 
-- Keep v1 anonymous and in-memory unless explicitly requested otherwise.
-- Prefer small, testable modules under `lib/`.
-- API changes should keep client contracts explicit and typed.
-- Do not introduce background workers or heavy infrastructure without explicit request.
+- Prefer small, focused Swift files and typed models.
+- Add tests for behavior changes in `Tests/DopamineCoreTests`.
+- Keep public API surface minimal and explicit.
+- Avoid adding dependencies unless necessary.
 
-## Code Standards
+## Validation
 
-- TypeScript strictness should remain enabled.
-- Add/update tests when behavior changes.
-- Avoid introducing broad dependencies for small utilities.
-- Preserve readable, minimal interfaces.
-
-## Validation Expectations
-
-Before finishing work, run at minimum:
+Run before finalizing:
 
 ```bash
-npm test
-npm run build
+xcrun swift test
+xcrun swift run DopamineCLI
 ```
-
-If either command cannot be run, clearly state why in the final report.
