@@ -63,8 +63,17 @@ public final class DopamineEngine {
 
     public func switchProject(sessionID: String, projectID: String) -> (active: [Project], archived: [Project], archiveEvent: ArchiveEvent?) {
         var state = getOrCreateSession(sessionID: sessionID)
+        guard state.projects.contains(where: { $0.id == projectID }) else {
+            return (
+                active: activeProjects(from: state),
+                archived: archivedProjects(from: state),
+                archiveEvent: nil
+            )
+        }
+
         let event = applyActiveCap(activatingProjectID: projectID, state: &state)
         state.selectedProjectID = projectID
+        state.updatedAt = Date()
         sessions[sessionID] = state
 
         return (
@@ -81,7 +90,13 @@ public final class DopamineEngine {
             return nil
         }
 
-        state.projects[index].name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return nil
+        }
+
+        state.projects[index].name = trimmed
+        state.updatedAt = Date()
         sessions[sessionID] = state
         return state.projects[index]
     }
@@ -98,6 +113,7 @@ public final class DopamineEngine {
         if let targetIndex = state.projects.firstIndex(where: { $0.id == projectID }) {
             state.projects[targetIndex].lastTouchedAt = Date()
         }
+        state.updatedAt = Date()
         sessions[sessionID] = state
         return true
     }
@@ -157,6 +173,27 @@ public final class DopamineEngine {
 
     private func pickProject(for content: String, state: inout SessionState) -> Project {
         let vector = NLP.vectorize(content)
+        if vector.isEmpty {
+            if let selectedProjectID = state.selectedProjectID,
+               let selected = state.projects.first(where: { $0.id == selectedProjectID }) {
+                return selected
+            }
+
+            return state.projects.first ?? Project(
+                id: makeID(prefix: "proj"),
+                name: "General",
+                colorHex: Self.projectColors[0],
+                status: .active,
+                momentum: 5,
+                hardness: 5,
+                timeRequired: 5,
+                feasibility: 6,
+                centroid: [:],
+                messageCount: 0,
+                lastTouchedAt: Date()
+            )
+        }
+
         let active = state.projects.filter { $0.status == .active }
 
         var bestProject: Project?
@@ -213,31 +250,37 @@ public final class DopamineEngine {
         state.projects[targetIndex].status = .active
         state.projects[targetIndex].lastTouchedAt = Date()
 
-        let active = state.projects.filter { $0.status == .active }
+        var active = state.projects.filter { $0.status == .active }
         guard active.count > Self.activeProjectCap else {
             return nil
         }
 
-        let candidates = active.filter { $0.id != activatingProjectID }
-        guard let archiveTarget = candidates.sorted(
-            by: {
-                if $0.momentum == $1.momentum {
-                    return $0.lastTouchedAt < $1.lastTouchedAt
+        var archivedProjectID: String?
+        while active.count > Self.activeProjectCap {
+            let candidates = active.filter { $0.id != activatingProjectID }
+            guard let archiveTarget = candidates.sorted(
+                by: {
+                    if $0.momentum == $1.momentum {
+                        return $0.lastTouchedAt < $1.lastTouchedAt
+                    }
+                    return $0.momentum < $1.momentum
                 }
-                return $0.momentum < $1.momentum
+            ).first,
+                  let archiveIndex = state.projects.firstIndex(where: { $0.id == archiveTarget.id }) else {
+                return nil
             }
-        ).first,
-              let archiveIndex = state.projects.firstIndex(where: { $0.id == archiveTarget.id }) else {
-            return nil
+
+            state.projects[archiveIndex].status = .archived
+            if state.selectedProjectID == archiveTarget.id {
+                state.selectedProjectID = activatingProjectID
+            }
+            archivedProjectID = archiveTarget.id
+            active = state.projects.filter { $0.status == .active }
         }
 
-        state.projects[archiveIndex].status = .archived
-        if state.selectedProjectID == archiveTarget.id {
-            state.selectedProjectID = activatingProjectID
-        }
-
+        guard let archivedProjectID else { return nil }
         return ArchiveEvent(
-            archivedProjectID: archiveTarget.id,
+            archivedProjectID: archivedProjectID,
             activatedProjectID: activatingProjectID
         )
     }
@@ -261,11 +304,11 @@ public final class DopamineEngine {
     }
 
     private func markCompletionSignal(content: String, state: inout SessionState) {
-        if content.range(of: "\\b(done|finished|shipped|completed|sent|closed)\\b", options: .regularExpression) != nil {
+        if content.range(of: "(?i)\\b(done|finished|shipped|completed|sent|closed)\\b", options: .regularExpression) != nil {
             state.completedUnits += 1
         }
 
-        if content.range(of: "\\bplan|todo|next|goal|scope\\b", options: .regularExpression) != nil {
+        if content.range(of: "(?i)\\b(plan|todo|next|goal|scope)\\b", options: .regularExpression) != nil {
             state.planUnits = max(state.planUnits, state.completedUnits + 1)
         }
     }
@@ -275,8 +318,8 @@ public final class DopamineEngine {
             return
         }
 
-        let completionSignal = content.range(of: "\\b(done|finished|shipped|completed|sent|closed)\\b", options: .regularExpression) != nil
-        let stuckSignal = content.range(of: "\\b(stuck|blocked|overwhelmed|switching|distracted)\\b", options: .regularExpression) != nil
+        let completionSignal = content.range(of: "(?i)\\b(done|finished|shipped|completed|sent|closed)\\b", options: .regularExpression) != nil
+        let stuckSignal = content.range(of: "(?i)\\b(stuck|blocked|overwhelmed|switching|distracted)\\b", options: .regularExpression) != nil
 
         if completionSignal {
             state.projects[index].momentum = min(10, state.projects[index].momentum + 1.2)

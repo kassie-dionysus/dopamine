@@ -42,4 +42,54 @@ struct DopamineEngineTests {
         #expect(response.assistantMessage.content.contains("Momentum"))
         #expect(response.assistantMessage.content.contains("Progress"))
     }
+
+    @Test("Selecting an unknown project leaves selection unchanged")
+    func switchUnknownProjectIsNoOp() {
+        let engine = DopamineEngine()
+        let start = engine.start(sessionID: "s4")
+        let selectedBefore = start.activeProjects.first?.id
+
+        _ = engine.switchProject(sessionID: "s4", projectID: "proj_missing")
+
+        let state = engine.sessionState(sessionID: "s4")
+        #expect(state.selectedProjectID == selectedBefore)
+    }
+
+    @Test("Empty rename is rejected")
+    func renameRejectsEmptyName() throws {
+        let engine = DopamineEngine()
+        let start = engine.start(sessionID: "s5")
+        let projectID = try #require(start.activeProjects.first?.id)
+
+        let renamed = engine.renameProject(sessionID: "s5", projectID: projectID, name: "   ")
+
+        #expect(renamed == nil)
+        let state = engine.sessionState(sessionID: "s5")
+        let project = state.projects.first(where: { $0.id == projectID })
+        #expect(project?.name == "General")
+    }
+
+    @Test("Uppercase completion keywords increment completion units")
+    func completionSignalsAreCaseInsensitive() {
+        let engine = DopamineEngine()
+        _ = engine.start(sessionID: "s6")
+
+        _ = engine.postMessage(sessionID: "s6", content: "DONE and SHIPPED")
+
+        let state = engine.sessionState(sessionID: "s6")
+        #expect(state.completedUnits == 1)
+    }
+
+    @Test("Punctuation-only messages stay on selected project")
+    func punctuationMessageDoesNotCreateProject() throws {
+        let engine = DopamineEngine()
+        let start = engine.start(sessionID: "s7")
+        let selected = try #require(start.activeProjects.first?.id)
+
+        _ = engine.postMessage(sessionID: "s7", content: "!!!")
+
+        let state = engine.sessionState(sessionID: "s7")
+        #expect(state.selectedProjectID == selected)
+        #expect(state.projects.filter { $0.status == .active }.count == 1)
+    }
 }
