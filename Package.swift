@@ -11,6 +11,7 @@ let package = Package(
     products: [
         .library(name: "DopamineCore", targets: ["DopamineCore"]),
         .library(name: "DopamineUI", targets: ["DopamineUI"]),
+        .executable(name: "DopamineApp", targets: ["DopamineApp"]),
         .executable(name: "DopamineCLI", targets: ["DopamineCLI"])
     ],
     targets: [
@@ -18,6 +19,10 @@ let package = Package(
         .target(
             name: "DopamineUI",
             dependencies: ["DopamineCore"]
+        ),
+        .executableTarget(
+            name: "DopamineApp",
+            dependencies: ["DopamineUI"]
         ),
         .executableTarget(
             name: "DopamineCLI",
