@@ -1,58 +1,112 @@
-# Dopamine (Swift Rewrite)
+# Dopamine
 
-Dopamine is a depth-first focus coach that clusters conversations into projects, caps active work to 3 goals, and guides users toward small, high-leverage steps.
-This repository is now fully rewritten in Swift.
+Dopamine is a ChatGPT-native coaching layer for people who chat a lot, start many ideas, and struggle to finish.
 
-## What Changed
+ChatGPT already has a Projects feature. Dopamine does not replace it. Dopamine tracks conversation behavior over time and actively coaches users back to outcomes.
 
-- Removed the previous Next.js/TypeScript implementation.
-- Replaced the project with a Swift package architecture.
-- Preserved core product behavior:
-  - Automatic project/topic clustering.
-  - Active-project cap with archive fallback.
-  - Focus, Momentum, Progress scoring.
-  - Leader-style coaching responses with score explainability in chat.
+## Who It Is For
 
-## Architecture
+Users who:
 
-### `DopamineCore`
+- give up too early,
+- jump between ideas,
+- lose track of priorities,
+- do not know how far along they are,
+- need encouragement that is realistic about effort.
 
-Swift domain engine and business logic:
+## Core Product Contract
 
-- Session state and project/message models.
-- Topic inference via token vectors + cosine similarity.
-- Top-3 active cap and lowest-momentum archive policy.
-- Focus, Momentum, Progress scoring and breakdowns.
-- Leader-style response generation.
-- In-process engine APIs (no HTTP server required in this repo).
+- Active projects are capped at `3`.
+- Each conversation belongs to exactly one project.
+- A project can have many conversations.
+- Additional projects must be archived/demoted explicitly by user choice when over cap.
+- Users can rename projects, reorder top projects, and manually reassign conversations at any time.
+- Users can set custom instructions:
+  - global instructions for all Dopamine behavior,
+  - project-level instructions for one project.
 
-### `DopamineUI`
+## Metrics
 
-SwiftUI views and view model:
+- `Focus` (global): how concentrated the user is across recent chats, based on topic breadth and context switching.
+- `Momentum` (per project): projected speed and likelihood of reaching completion.
+- `Progress` (per project): weighted completion adjusted for project difficulty and available resources.
+- `On-Track Probability` (internal per project): ranking signal used to choose default top 3 shown on load.
+- User ordering can override default ranking.
 
-- Left project rail (active highlighted, archived muted).
-- Top 25% metric strip with 3 unlabeled color bars.
-- Tap-to-reveal metric name + percentage.
-- Chat pane with project-stripe messages.
-- Manual correction flows:
-  - Rename project.
-  - Reassign message to project.
+## First-Launch Flow
 
-Note: `DopamineUI` is a SwiftUI module. Packaging into an iOS app target is tracked in the backlog below.
+1. User opens app.
+2. User chooses whether to connect OpenAI API key.
+3. User chooses import path:
+   - import prior context from ChatGPT share links, or
+   - start fresh.
+4. If importing:
+   - app fetches link content,
+   - parses conversation history,
+   - imports messages and derives project assignments.
+5. User chooses startup mode:
+   - provide top goals/projects now, or
+   - start chatting and let Dopamine infer top 3 over time.
 
-### `DopamineCLI`
+## Daily Flow
 
-CLI harness for local behavior testing and demo runs.
+1. User enters Project A, B, or C, or starts a new conversation.
+2. New conversation is categorized to one of the active projects.
+3. If content is off-topic, app asks whether to:
+   - keep in selected project,
+   - move to another active project,
+   - create a new project (then demote one active project to archive).
+4. Assistant responds with coaching that is aware of Focus/Momentum/Progress and the 3-project constraint.
+
+## How ChatGPT Becomes a Proactive Coach
+
+Dopamine prompts the assistant with project state, score state, and constraints so it behaves like a product manager from ideation to productization.
+
+Mechanism:
+
+1. Infer project and drift risk from each turn.
+2. Recompute Focus/Momentum/Progress continuously.
+3. Select one coaching intervention when needed:
+   - priority question when focus drops,
+   - scope reduction when progress stalls,
+   - next-step nudge when momentum dips,
+   - encouragement grounded in realistic effort and timeline.
+4. End each substantial response with one concrete next action and a done-state.
+5. If user is stuck, assistant guides through blockers instead of letting the thread drift.
+
+## UX Direction (iPhone)
+
+Stay very close to the OpenAI ChatGPT iOS interaction model:
+
+- chat-first primary surface,
+- minimal indicator row for focus/project status,
+- detail surfaces on tap (metrics sheet, project switcher, archive sheet),
+- no dashboard-heavy default home.
+
+See:
+
+- [iOS Chat Coach Layout](/Users/kdio/codex/dopamine/docs/ios-chat-coach-layout.md)
+- [Architecture](/Users/kdio/codex/dopamine/ARCHITECTURE.md)
+
+## Architecture Summary
+
+- `DopamineCore`: state, classification, scoring, coaching policy, archive/ranking policy.
+- `DopamineUI`: onboarding, chat-first shell, project controls, metric reveal surfaces.
+- `DopamineApp`: SwiftUI app entry point.
+- `DopamineCLI`: local harness for behavior validation.
 
 ## Repo Layout
 
 - `Package.swift`
+- `ARCHITECTURE.md`
+- `Sources/DopamineApp/`
 - `Sources/DopamineCore/`
 - `Sources/DopamineUI/`
 - `Sources/DopamineCLI/`
 - `Tests/DopamineCoreTests/`
+- `docs/`
 
-## Build and Test
+## Build and Validation
 
 ### Prerequisites
 
@@ -71,42 +125,17 @@ xcrun swift test
 xcrun swift run DopamineCLI
 ```
 
-## iOS Shift Backlog
+### Run app shell (macOS)
 
-1. [x] Define iOS product behavior from the existing model (parity vs mobile adaptations).
-2. [x] Choose iOS stack and architecture (Swift package + SwiftUI modules).
-3. [x] Scaffold baseline project and CI-testable Swift package structure.
-4. [ ] Implement full app shell integration in an iOS app target.
-5. [ ] Implement production-grade project rail UX (active + archived infinite list).
-6. [ ] Implement production chat UX polish and interaction refinements.
-7. [ ] Integrate persistence/network service layer where required.
-8. [ ] Harden rename and reassignment correction flows in app-level UX.
-9. [ ] Finalize metric interaction contract (unlabeled by default, tap reveal only).
-10. [ ] Complete QA and TestFlight release prep.
+```bash
+xcrun swift run DopamineApp
+```
 
-## iOS Shift Execution Plan
+### Run in Xcode
 
-### Phase 1: Foundation (Tasks 1-3)
-
-1. Lock parity requirements.
-2. Finalize iOS architecture decisions.
-3. Scaffold iOS app + CI foundation.
-
-### Phase 2: Core Experience (Tasks 4-6)
-
-4. Build shell/navigation and metric region.
-5. Build active/archived project UX.
-6. Build full chat experience.
-
-### Phase 3: Integration + Controls (Tasks 7-9)
-
-7. Add typed service integration.
-8. Add project/message correction controls.
-9. Finish metric interaction behavior.
-
-### Phase 4: Release Readiness (Task 10)
-
-10. Execute QA, accessibility, performance, and TestFlight packaging.
+1. Open `/Users/kdio/codex/dopamine/Package.swift` in Xcode.
+2. Select the `DopamineApp` scheme.
+3. Build and run.
 
 ## License
 
