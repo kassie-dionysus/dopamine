@@ -28,20 +28,56 @@ public final class DopamineEngine {
     }
 
     public func postMessage(sessionID: String, content: String) -> ChatResponse {
+        let pending = beginAssistantTurn(sessionID: sessionID, content: content)
+        return completeAssistantTurn(
+            sessionID: sessionID,
+            content: pending.localReply,
+            projectID: pending.selectedProjectID,
+            archiveEvent: pending.archiveEvent
+        )
+    }
+
+    public func beginAssistantTurn(sessionID: String, content: String) -> PendingAssistantTurn {
         var state = getOrCreateSession(sessionID: sessionID)
         let selectedProject = pickProject(for: content, state: &state)
         let archiveEvent = applyActiveCap(activatingProjectID: selectedProject.id, state: &state)
         state.selectedProjectID = selectedProject.id
 
-        _ = addMessage(role: .user, content: content, projectID: selectedProject.id, into: &state)
+        let userMessage = addMessage(role: .user, content: content, projectID: selectedProject.id, into: &state)
         touchProjectMomentum(projectID: selectedProject.id, content: content, state: &state)
         markCompletionSignal(content: content, state: &state)
 
         let scores = Scoring.computeScores(state: state)
         let breakdown = Scoring.computeBreakdown(state: state, scores: scores)
         let reply = Coach.response(to: content, state: state, scores: scores, breakdown: breakdown)
-        let assistantMessage = addMessage(role: .assistant, content: reply, projectID: selectedProject.id, into: &state)
 
+        sessions[sessionID] = state
+
+        return PendingAssistantTurn(
+            userMessage: userMessage,
+            messages: state.messages,
+            scores: scores,
+            scoreBreakdown: breakdown,
+            selectedProjectID: state.selectedProjectID,
+            activeProjects: activeProjects(from: state),
+            archivedProjects: archivedProjects(from: state),
+            archiveEvent: archiveEvent,
+            localReply: reply
+        )
+    }
+
+    public func completeAssistantTurn(
+        sessionID: String,
+        content: String,
+        projectID: String? = nil,
+        archiveEvent: ArchiveEvent? = nil
+    ) -> ChatResponse {
+        var state = getOrCreateSession(sessionID: sessionID)
+        let resolvedProjectID = projectID
+            ?? state.selectedProjectID
+            ?? state.projects.first?.id
+            ?? makeID(prefix: "proj")
+        let assistantMessage = addMessage(role: .assistant, content: content, projectID: resolvedProjectID, into: &state)
         sessions[sessionID] = state
         return buildResponse(state: state, assistantMessage: assistantMessage, archiveEvent: archiveEvent)
     }
@@ -343,6 +379,7 @@ public final class DopamineEngine {
             messages: state.messages,
             scores: scores,
             scoreBreakdown: breakdown,
+            selectedProjectID: state.selectedProjectID,
             activeProjects: activeProjects(from: state),
             archivedProjects: archivedProjects(from: state),
             archiveEvent: archiveEvent

@@ -92,4 +92,43 @@ struct DopamineEngineTests {
         #expect(state.selectedProjectID == selected)
         #expect(state.projects.filter { $0.status == .active }.count == 1)
     }
+<<<<<<< ours
+<<<<<<< ours
+
+    @Test("Responses carry the routed selected project")
+    func responsesExposeSelectedProject() throws {
+        let engine = DopamineEngine()
+        _ = engine.start(sessionID: "s8")
+
+        let response = engine.postMessage(sessionID: "s8", content: "landing page copy launch campaign")
+        let selectedProjectID = try #require(response.selectedProjectID)
+
+        #expect(selectedProjectID == response.assistantMessage.projectID)
+        #expect(engine.sessionState(sessionID: "s8").selectedProjectID == selectedProjectID)
+    }
+
+    @Test("Prepared turns can be completed with an external assistant reply")
+    func preparedTurnsSupportExternalReplies() throws {
+        let engine = DopamineEngine()
+        _ = engine.start(sessionID: "s9")
+
+        let pending = engine.beginAssistantTurn(sessionID: "s9", content: "hi there")
+        #expect(pending.userMessage.role == .user)
+        #expect(pending.messages.last?.role == .user)
+
+        let response = engine.completeAssistantTurn(
+            sessionID: "s9",
+            content: "Hello from OpenAI",
+            projectID: pending.selectedProjectID,
+            archiveEvent: pending.archiveEvent
+        )
+
+        #expect(response.assistantMessage.content == "Hello from OpenAI")
+        #expect(response.messages.last?.role == .assistant)
+        #expect(response.messages.last?.projectID == pending.selectedProjectID)
+    }
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 }

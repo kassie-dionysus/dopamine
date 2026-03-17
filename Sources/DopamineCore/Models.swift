@@ -157,6 +157,7 @@ public struct ChatResponse: Codable, Equatable, Sendable {
     public var messages: [ChatMessage]
     public var scores: Scores
     public var scoreBreakdown: ScoreBreakdown
+    public var selectedProjectID: String?
     public var activeProjects: [Project]
     public var archivedProjects: [Project]
     public var archiveEvent: ArchiveEvent?
@@ -166,6 +167,7 @@ public struct ChatResponse: Codable, Equatable, Sendable {
         messages: [ChatMessage],
         scores: Scores,
         scoreBreakdown: ScoreBreakdown,
+        selectedProjectID: String?,
         activeProjects: [Project],
         archivedProjects: [Project],
         archiveEvent: ArchiveEvent?
@@ -174,9 +176,44 @@ public struct ChatResponse: Codable, Equatable, Sendable {
         self.messages = messages
         self.scores = scores
         self.scoreBreakdown = scoreBreakdown
+        self.selectedProjectID = selectedProjectID
         self.activeProjects = activeProjects
         self.archivedProjects = archivedProjects
         self.archiveEvent = archiveEvent
+    }
+}
+
+public struct PendingAssistantTurn: Codable, Equatable, Sendable {
+    public var userMessage: ChatMessage
+    public var messages: [ChatMessage]
+    public var scores: Scores
+    public var scoreBreakdown: ScoreBreakdown
+    public var selectedProjectID: String?
+    public var activeProjects: [Project]
+    public var archivedProjects: [Project]
+    public var archiveEvent: ArchiveEvent?
+    public var localReply: String
+
+    public init(
+        userMessage: ChatMessage,
+        messages: [ChatMessage],
+        scores: Scores,
+        scoreBreakdown: ScoreBreakdown,
+        selectedProjectID: String?,
+        activeProjects: [Project],
+        archivedProjects: [Project],
+        archiveEvent: ArchiveEvent?,
+        localReply: String
+    ) {
+        self.userMessage = userMessage
+        self.messages = messages
+        self.scores = scores
+        self.scoreBreakdown = scoreBreakdown
+        self.selectedProjectID = selectedProjectID
+        self.activeProjects = activeProjects
+        self.archivedProjects = archivedProjects
+        self.archiveEvent = archiveEvent
+        self.localReply = localReply
     }
 }
 

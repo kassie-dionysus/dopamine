@@ -1,4 +1,18 @@
-.DS_Store
-.build/
-.swiftpm/
+# Xcode
 DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+
+# macOS
+.DS_Store
+
+# Local secrets
+.env
+.env.*
+*.secret
+*.key
+Dopamine.xcodeproj/xcshareddata/xcschemes/Dopamine.xcscheme

@@ -22,7 +22,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "DopamineApp",
-            dependencies: ["DopamineUI"]
+            dependencies: ["DopamineUI"],
+            path: "App/iOS"
         ),
         .executableTarget(
             name: "DopamineCLI",

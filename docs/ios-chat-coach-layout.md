@@ -4,6 +4,8 @@
 
 Define the proposed iPhone layout for Dopamine as a ChatGPT-native coaching product.
 
+This is a target product-layout document. The current package app is a local validation shell, not yet the final production iPhone implementation.
+
 Important product framing:
 
 - ChatGPT already has a Projects feature.

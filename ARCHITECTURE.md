@@ -2,236 +2,114 @@
 
 ## Purpose
 
-This document defines the target architecture for Dopamine as a ChatGPT-native execution coach.
+This document separates the architecture that exists in the repository **today** from the larger Dopamine product architecture that is still **planned**.
 
-ChatGPT already provides projects. Dopamine adds longitudinal coaching so users stop drifting and finish outcomes.
+That distinction matters because the current codebase is still a prototype, even though it now includes a checked-in iOS app project alongside the Swift package.
 
-## Product Constraints
+## Current Implemented Architecture
 
-- Maximum active projects: `3`.
-- Each conversation belongs to exactly one project.
-- A project can have many conversations.
-- New project creation over cap requires user-selected demotion to archive.
-- Assistant must always be aware of Focus, Momentum, Progress, and the active-cap rule.
-- Users can manually override:
-  - project names,
-  - project ordering,
-  - conversation-to-project assignments,
-  - global and per-project custom instructions.
+The repository currently has four package products:
 
-## High-Level Architecture
+1. `DopamineCore`
+   - In-memory domain logic.
+   - Owns project models, message models, scoring, routing heuristics, archive policy, coaching text generation, and the basic OpenAI Responses API client.
+   - Has no persistence or production-grade service boundaries yet.
 
-- `DopamineUI` (SwiftUI): onboarding, chat shell, project controls, metric reveal surfaces.
-- `DopamineCore` (domain engine): state model, classification, scoring, ranking, coaching policy.
-- `OpenAIGateway` (integration boundary): OpenAI API calls and model routing.
-- `ImportPipeline` (integration boundary): ChatGPT share-link import and transcript ingestion.
-- `Storage` (local + optional remote): projects, conversations, messages, settings, instructions, score history.
+2. `DopamineUI`
+   - SwiftUI shell around `DopamineCore`.
+   - Uses Swift Observation for UI state.
+   - Provides an adaptive local interface for macOS and iPhone-class layouts.
+   - Stores a developer API key in Keychain and can route assistant replies through OpenAI for simulator/device validation.
 
-## Frontend Expected Behavior
+3. `DopamineApp`
+   - Shared SwiftUI app entry point stored in `App/iOS`.
+   - Built by SwiftPM for local macOS validation and by `Dopamine.xcodeproj` for iOS simulator/device runs.
+   - Still not a production release target with finalized signing, assets, capabilities, or metadata.
 
-## 1) Onboarding
+4. `DopamineCLI`
+   - Terminal smoke harness for validating the prototype engine.
 
-First-launch flow:
+## Current Data Flow
 
-1. Welcome screen with two paths:
-   - `Import from ChatGPT share links`
-   - `Start fresh`
-2. API key setup:
-   - ask for OpenAI API key before any network-backed assistant operations,
-   - allow skip for local/non-API mode if supported,
-   - show settings path to add/update key later.
-3. Project initialization:
-   - user can provide top goals/projects immediately, or
-   - start chatting and allow Dopamine to infer top projects over time.
+1. A session starts in `DopamineEngine`.
+2. A user message is routed to an existing or new project using lightweight token similarity.
+3. The engine updates project heuristics and score inputs.
+4. `Scoring` computes `Focus`, `Momentum`, and `Progress`.
+5. `Coach` produces a local response string.
+6. `DopamineUI` renders the updated session state.
+7. When OpenAI mode is enabled, the UI sends the prepared transcript to the Responses API and appends the returned assistant text back into the session.
 
-## 2) Main Chat Screen (ChatGPT-like)
+## Current Known Gaps
 
-- Keep the default screen chat-first.
-- Show compact top indicators only:
-  - global Focus indicator,
-  - three active project chips with Momentum/Progress signals.
-- Tap reveals:
-  - metric details sheet,
-  - project switcher (active + archived),
-  - scoring rationale and "how to improve" actions.
-- Keep archive muted and secondary.
+These product pieces are part of the target vision but are **not** implemented in the current repository:
 
-## 3) Conversation and Project Actions
+- persistent project, conversation, and message storage
+- ChatGPT share-link import
+- real conversation entities and conversation-to-project storage
+- user-controlled archive choice when creating a fourth active project
+- `onTrackProbability` ranking
+- deterministic prompt assembly for global plus per-project instructions
+- first-run API key onboarding
+- production-quality service boundaries for OpenAI and import workflows
+- release-grade signing, assets, metadata, and App Store distribution setup
 
-- User can enter Project A, B, or C and continue existing conversations.
-- User can start a new conversation at any time.
-- Each new conversation must be assigned to exactly one project.
-- If off-topic drift is detected, show decision fork:
-  - keep current project,
-  - move conversation to another active project,
-  - create new project (requires choosing one active project to archive).
+## Product Constraints That Must Survive Growth
 
-## 4) Manual Overrides
+- Maximum active projects: `3`
+- Each conversation belongs to exactly one project
+- A project can have many conversations
+- New project creation over cap must require explicit user demotion or archive choice in the production UX
+- Assistant behavior must remain aware of Focus, Momentum, Progress, and the active-cap rule
+- Users must be able to manually rename, reorder, and reassign
 
-- Rename project.
-- Reorder active projects.
-- Reassign conversation to another project.
-- Edit global custom instructions.
-- Edit per-project custom instructions.
+## Planned Production Architecture
 
-## Backend Expected Behavior
+When the prototype grows into a real app, use a feature-oriented Apple-platform architecture with explicit boundaries.
 
-## 1) API Key Management
+### App Layer
 
-- Capture key during onboarding or settings.
-- Store in secure platform secret storage (for Apple platforms, Keychain).
-- Never write key to logs, analytics payloads, or plain-text files.
-- Gate OpenAI API requests when key is missing/invalid and show recovery UX.
+- checked-in iOS app target
+- scene setup
+- navigation
+- dependency assembly
+- signing and release configuration
 
-## 2) Share Link Import Pipeline
+### Feature Layer
 
-- Input: one or more ChatGPT share URLs.
-- Pipeline:
-  1. fetch shared conversation content,
-  2. parse transcript turns + timestamps if available,
-  3. map messages to imported conversations,
-  4. infer project candidates and assignments,
-  5. populate project/conversation/message store,
-  6. compute initial Focus/Momentum/Progress.
-- Import must be idempotent where possible (avoid duplicate ingestion).
+- onboarding
+- main chat shell
+- project management surfaces
+- import flow
+- settings and instructions
 
-## 3) Project Assignment and Drift Detection
+Each feature should own its own SwiftUI views and presentation logic.
 
-- Assignment service maps each conversation to one project.
-- Drift detector flags when message content diverges from the current project.
-- Drift confidence threshold triggers fork UX in chat.
-- User decision always overrides model assignment.
+### Shared Domain And Services
 
-## 4) Scoring Engine
+- project, conversation, message, and score models
+- ranking and coaching policies
+- prompt composition rules
+- integration protocols
+- configuration
+- logging and diagnostics
 
-- `Focus` (global): penalize breadth and rapid context switching.
-- `Momentum` (project): estimate pace toward completion based on recent completions and projected effort.
-- `Progress` (project): weighted completion adjusted by difficulty and available resources.
-- `onTrackProbability` (internal, project): combines momentum trend, blocker load, and completion confidence.
-- Keep score history for trend-based coaching.
+### Integration Layer
 
-## 5) Ranking and Active-Cap Policy
+- OpenAI gateway
+- ChatGPT share-link import pipeline
+- persistence adapters
+- secure secret storage
+- optional analytics and monitoring
 
-- Default active ordering uses `onTrackProbability`.
-- If creating a new project at cap:
-  - prompt user to choose demotion target,
-  - archive selected project,
-  - activate new project.
-- Preserve user overrides until user resets ordering.
+## Apple-Platform Guidance
 
-## 6) Prompt Composition and Assistant Policy
+- Keep SwiftUI-facing state on the main actor.
+- Prefer Swift Observation over legacy `ObservableObject` on the current deployment targets.
+- Keep domain logic reusable and isolated from SwiftUI.
+- Use explicit dependency injection instead of global singletons.
+- Mark docs clearly when they describe future state instead of implemented code.
 
-For every assistant turn, build context from:
+## Delivery Implication
 
-- global custom instructions,
-- project-level custom instructions,
-- current project and conversation metadata,
-- Focus/Momentum/Progress values and trend,
-- active-project cap and archive state.
-
-Response policy:
-
-1. If Focus low, ask priority clarification question.
-2. If Momentum low, suggest smallest viable next action.
-3. If Progress stalled, suggest scope cut or resource change.
-4. End substantial responses with one explicit next action and done-state.
-5. Keep encouragement realistic, not generic.
-
-## Data Model (Conceptual)
-
-- `Project`
-  - `id`, `name`, `status(active|archived)`, `userOrder`, `onTrackProbability`
-  - `difficulty`, `resourceProfile`, `momentum`, `progress`
-  - `customInstructions`
-- `Conversation`
-  - `id`, `projectID`, `title`, `createdAt`, `updatedAt`, `source(imported|native)`
-- `Message`
-  - `id`, `conversationID`, `role`, `content`, `createdAt`
-- `UserSettings`
-  - `globalInstructions`
-  - `openAIKeyRef` (secure store reference)
-- `ScoreSnapshot`
-  - `timestamp`, `focus`, `projectScores[]`
-
-## User Flows
-
-## Flow A: First Launch With Import
-
-1. Launch app.
-2. Enter OpenAI key or skip.
-3. Paste ChatGPT share links.
-4. Import and parse history.
-5. System infers projects and assigns conversations.
-6. User reviews top 3 active projects.
-7. User can rename/reorder/reassign before chatting.
-
-## Flow B: First Launch Fresh
-
-1. Launch app.
-2. Enter OpenAI key or skip.
-3. Choose:
-   - define projects now, or
-   - start chatting.
-4. If chatting first, system gradually infers top 3 projects and asks for confirmation.
-
-## Flow C: New Conversation While At Cap
-
-1. User starts new conversation.
-2. Classifier checks fit with existing active projects.
-3. If no fit and user wants new project:
-   - ask which active project to archive,
-   - activate new project,
-   - attach conversation to the new project.
-
-## Flow D: Off-Topic Drift Mid-Conversation
-
-1. Drift detector confidence crosses threshold.
-2. Assistant asks routing question in chat.
-3. User picks stay/move/new.
-4. System updates conversation assignment and scores.
-
-## Flow E: Custom Instructions
-
-1. User edits global instructions in settings.
-2. User edits project instructions in project detail.
-3. Prompt composer merges instructions every turn.
-
-## Top Risks / Issues To Solve (Priority Order)
-
-1. Share-link ingestion reliability.
-   - Risk: parsing variance and brittle extraction from shared pages.
-   - Need: robust parser strategy and fallback UX for partial import.
-2. Privacy and security for imported transcripts and API key.
-   - Risk: accidental logging or insecure persistence.
-   - Need: strict secret handling, redaction, and local encryption strategy.
-3. Project assignment accuracy.
-   - Risk: wrong project links make users distrust the system.
-   - Need: confidence thresholds + always-available manual correction.
-4. Drift detection false positives.
-   - Risk: too many interruptions in natural conversation.
-   - Need: calibrated thresholds and low-friction dismiss controls.
-5. Score explainability.
-   - Risk: Focus/Momentum/Progress feel arbitrary.
-   - Need: transparent "why score changed" and "how to improve" guidance.
-6. On-track probability calibration.
-   - Risk: incorrect ranking of top 3 projects.
-   - Need: empirical tuning and user override persistence.
-7. Prompt contract complexity.
-   - Risk: global + project instructions + coaching policy conflict.
-   - Need: deterministic prompt layering and guardrails.
-8. Over-coaching vs under-coaching balance.
-   - Risk: assistant becomes noisy or passive.
-   - Need: intervention policy with rate limits and trigger windows.
-9. Archive/demotion UX friction.
-   - Risk: users feel punished by 3-project cap.
-   - Need: reversible archive flow and clear rationale messaging.
-10. Longitudinal performance and cost.
-   - Risk: heavy historical analysis slows UX and increases token spend.
-   - Need: incremental summaries, caching, and bounded context windows.
-
-## Near-Term Validation Focus
-
-- Confirm onboarding completion rates for key + import path.
-- Measure manual correction frequency (rename/reassign/reorder).
-- Track whether coaching interventions increase completion of next actions.
-- Validate whether users maintain stable top 3 over time.
+The package and checked-in Xcode project are ready for local validation.
+The repository is not yet ready for App Store submission without the missing production services and release configuration listed above.

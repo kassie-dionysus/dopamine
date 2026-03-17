@@ -11,7 +11,15 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 ### Product non-negotiables
 
 - Active project cap stays at **3**.
+<<<<<<< ours
+<<<<<<< ours
+- Production overflow handling requires an **explicit user-selected demotion or archive choice**.
+=======
 - Overflow handling archives the **lowest-momentum active project**.
+>>>>>>> theirs
+=======
+- Overflow handling archives the **lowest-momentum active project**.
+>>>>>>> theirs
 - Metrics remain exactly: **Focus**, **Momentum**, **Progress**.
 - Metric explainability remains conversationally available in chat.
 
@@ -26,6 +34,24 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 
 ### Completed
 
+<<<<<<< ours
+<<<<<<< ours
+1. Swift package architecture with `DopamineCore`, `DopamineUI`, `DopamineApp`, and `DopamineCLI`.
+2. In-memory core engine with project routing, cap/archive policy, and score generation.
+3. SwiftUI module implementing a local adaptive shell for rail, metric strip, and conversation layout.
+4. Checked-in iOS app project backed by shared `App/iOS` source and the local package.
+5. Basic OpenAI Responses API request flow with developer-key storage in Keychain.
+6. CLI smoke harness for deterministic behavioral checks.
+
+### Not yet completed
+
+1. Production-ready signing, assets, and release workflow hardening.
+2. Persistence and network/service layer hardening.
+3. User-selected archive flow when creating a fourth active project.
+4. Interaction polish, accessibility, and release hardening.
+=======
+=======
+>>>>>>> theirs
 1. Swift package architecture with `DopamineCore`, `DopamineUI`, and `DopamineCLI`.
 2. In-memory core engine with project routing, cap/archive policy, and score generation.
 3. SwiftUI module implementing core rail + metric strip + conversation layout.
@@ -36,6 +62,10 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 1. Production iOS app target integration.
 2. Persistence and network/service layer hardening.
 3. Interaction polish, accessibility, and release hardening.
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
 ## 3) Ordered Delivery Plan
 
@@ -43,14 +73,35 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 
 ### Goals
 
+<<<<<<< ours
+<<<<<<< ours
+- Harden the checked-in Xcode iOS app target consuming `DopamineCore` and `DopamineUI`.
+=======
 - Create production iOS app target consuming `DopamineCore` and `DopamineUI`.
+>>>>>>> theirs
+=======
+- Create production iOS app target consuming `DopamineCore` and `DopamineUI`.
+>>>>>>> theirs
 - Establish runtime configuration and environment handling.
 
 ### Tasks
 
+<<<<<<< ours
+<<<<<<< ours
+1. Maintain the shared app host target and dependency wiring to Swift package modules.
+2. Establish app lifecycle and root navigation shell around `DopamineRootView`.
+3. Define environment configuration points (API key handling, feature flags, debug options).
+4. Replace remaining prototype-only package-run assumptions with real app target settings.
+=======
 1. Add iOS app host target with dependency wiring to Swift package modules.
 2. Establish app lifecycle and root navigation shell around `DopamineRootView`.
 3. Define environment configuration points (API key handling, feature flags, debug options).
+>>>>>>> theirs
+=======
+1. Add iOS app host target with dependency wiring to Swift package modules.
+2. Establish app lifecycle and root navigation shell around `DopamineRootView`.
+3. Define environment configuration points (API key handling, feature flags, debug options).
+>>>>>>> theirs
 
 ### Exit criteria
 
@@ -68,8 +119,19 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 
 1. Define protocol-first service interfaces in core-adjacent layer.
 2. Implement persistence strategy for sessions/projects/messages.
+<<<<<<< ours
+<<<<<<< ours
+3. Harden the current OpenAI-backed request pipeline while preserving explainability contract.
+4. Add failure-handling and offline-safe UX states.
+5. Evolve the current Keychain-backed developer-key flow into the final onboarding experience.
+=======
 3. Implement request pipeline for OpenAI-backed coaching flows while preserving explainability contract.
 4. Add failure-handling and offline-safe UX states.
+>>>>>>> theirs
+=======
+3. Implement request pipeline for OpenAI-backed coaching flows while preserving explainability contract.
+4. Add failure-handling and offline-safe UX states.
+>>>>>>> theirs
 
 ### Exit criteria
 
@@ -88,6 +150,13 @@ Ship a reliable iOS productivity coach that drives **focus**, **momentum**, and 
 2. Harden rename/reassign UX (validation, confirmation, undo where appropriate).
 3. Improve chat ergonomics (scroll behavior, input affordances, message grouping).
 4. Validate metric strip interaction parity (hidden by default, explicit reveal).
+<<<<<<< ours
+<<<<<<< ours
+5. Replace prototype auto-archive with explicit user choice plus suggested default.
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
 ### Exit criteria
 

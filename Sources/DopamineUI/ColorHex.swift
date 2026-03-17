@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 /// Hex color initializer used by the SwiftUI module.
@@ -16,3 +17,5 @@ extension Color {
         self = Color(red: red, green: green, blue: blue)
     }
 }
+
+#endif
